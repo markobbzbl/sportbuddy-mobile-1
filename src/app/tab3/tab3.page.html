@@ -1,0 +1,133 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Profil</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Profil</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <div class="content-container">
+    <ion-spinner *ngIf="isLoading && !profile" name="crescent"></ion-spinner>
+
+    <ion-card *ngIf="profile" class="profile-card">
+      <ion-card-content>
+        <div class="profile-header">
+          <div class="avatar-container">
+            <ion-avatar class="profile-avatar">
+              <img *ngIf="avatarUrl" [src]="avatarUrl" alt="Profilbild">
+              <ion-icon *ngIf="!avatarUrl" name="person"></ion-icon>
+            </ion-avatar>
+            <ion-button
+              fill="clear"
+              class="camera-button"
+              (click)="takePicture()"
+              aria-label="Foto aufnehmen"
+            >
+              <ion-icon name="camera" slot="icon-only"></ion-icon>
+            </ion-button>
+          </div>
+        </div>
+
+        <div *ngIf="!isEditing" class="profile-info">
+          <h2>{{ getProfileName() }}</h2>
+          <p class="email">{{ userEmail }}</p>
+        </div>
+
+        <form *ngIf="isEditing" [formGroup]="profileForm" class="profile-form">
+          <ion-item>
+            <ion-label position="stacked">Vorname *</ion-label>
+            <ion-input
+              formControlName="first_name"
+              placeholder="Ihr Vorname"
+              [class.ion-invalid]="profileForm.get('first_name')?.invalid && profileForm.get('first_name')?.touched"
+            ></ion-input>
+          </ion-item>
+          <ion-text color="danger" *ngIf="profileForm.get('first_name')?.invalid && profileForm.get('first_name')?.touched">
+            <p class="error-text">Bitte geben Sie Ihren Vornamen ein.</p>
+          </ion-text>
+
+          <ion-item>
+            <ion-label position="stacked">Nachname *</ion-label>
+            <ion-input
+              formControlName="last_name"
+              placeholder="Ihr Nachname"
+              [class.ion-invalid]="profileForm.get('last_name')?.invalid && profileForm.get('last_name')?.touched"
+            ></ion-input>
+          </ion-item>
+          <ion-text color="danger" *ngIf="profileForm.get('last_name')?.invalid && profileForm.get('last_name')?.touched">
+            <p class="error-text">Bitte geben Sie Ihren Nachnamen ein.</p>
+          </ion-text>
+
+          <ion-button
+            expand="block"
+            (click)="saveProfile()"
+            [disabled]="isLoading || profileForm.invalid"
+            class="ion-margin-top"
+          >
+            <ion-spinner *ngIf="isLoading" name="crescent"></ion-spinner>
+            <ion-icon name="save" *ngIf="!isLoading" slot="start"></ion-icon>
+            <span *ngIf="!isLoading">Speichern</span>
+          </ion-button>
+        </form>
+
+        <div *ngIf="!isEditing" class="profile-actions">
+          <ion-button
+            expand="block"
+            fill="outline"
+            (click)="toggleEdit()"
+            class="ion-margin-top"
+          >
+            <ion-icon name="create" slot="start"></ion-icon>
+            Profil bearbeiten
+          </ion-button>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card class="settings-card">
+      <ion-card-header>
+        <ion-card-title>Einstellungen</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-item button (click)="toggleDarkMode()">
+          <ion-icon name="moon" slot="start" *ngIf="isDarkMode"></ion-icon>
+          <ion-icon name="sunny" slot="start" *ngIf="!isDarkMode"></ion-icon>
+          <ion-label>
+            <h2>Dark Mode</h2>
+            <p>{{ isDarkMode ? 'Aktiviert' : 'Deaktiviert' }}</p>
+          </ion-label>
+        </ion-item>
+
+        <ion-item button (click)="selectPicture()">
+          <ion-icon name="images" slot="start"></ion-icon>
+          <ion-label>
+            <h2>Foto aus Galerie wählen</h2>
+          </ion-label>
+        </ion-item>
+
+        <ion-item button (click)="signOut()" color="danger">
+          <ion-icon name="log-out" slot="start"></ion-icon>
+          <ion-label>
+            <h2>Abmelden</h2>
+          </ion-label>
+        </ion-item>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-text color="danger" *ngIf="errorMessage">
+      <p class="ion-padding">{{ errorMessage }}</p>
+    </ion-text>
+  </div>
+
+  <ion-toast
+    [isOpen]="!!successMessage"
+    [message]="successMessage"
+    [duration]="3000"
+    (didDismiss)="successMessage = ''"
+  ></ion-toast>
+</ion-content>

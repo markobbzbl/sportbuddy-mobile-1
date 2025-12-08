@@ -1,0 +1,57 @@
+.login-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100%;
+  padding: 2rem 0;
+}
+
+.logo-section {
+  text-align: center;
+  margin-bottom: 2rem;
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin: 0;
+    color: var(--ion-color-primary);
+  }
+
+  .subtitle {
+    color: var(--ion-color-medium);
+    margin-top: 0.5rem;
+  }
+}
+
+.auth-card {
+  max-width: 500px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.error-text {
+  font-size: 0.875rem;
+  margin: 0.5rem 0 0 1rem;
+  display: block;
+}
+
+.toggle-mode {
+  text-align: center;
+  margin-top: 1.5rem;
+
+  a {
+    color: var(--ion-color-primary);
+    cursor: pointer;
+    text-decoration: underline;
+    font-weight: 500;
+  }
+}
+
+ion-item {
+  margin-bottom: 0.5rem;
+}
+
+ion-button[type="submit"] {
+  margin-top: 1.5rem;
+}
+

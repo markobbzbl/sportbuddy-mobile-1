@@ -1,0 +1,80 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>In der Nähe</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">In der Nähe</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <div class="content-container">
+    <ion-text color="danger" *ngIf="errorMessage">
+      <p class="ion-padding">{{ errorMessage }}</p>
+    </ion-text>
+
+    <div *ngIf="currentLocation" class="location-info">
+      <ion-icon name="location"></ion-icon>
+      <span>Ihr Standort: {{ currentLocation.lat.toFixed(4) }}, {{ currentLocation.lng.toFixed(4) }}</span>
+    </div>
+
+    <ion-spinner *ngIf="isLoading && nearbyOffers.length === 0" name="crescent"></ion-spinner>
+
+    <div *ngIf="nearbyOffers.length === 0 && !isLoading" class="empty-state">
+      <ion-icon name="location" size="large"></ion-icon>
+      <p>Keine Trainingsangebote in der Nähe gefunden.</p>
+      <p>Versuchen Sie es später erneut oder erstellen Sie selbst ein Angebot!</p>
+    </div>
+
+    <ion-card *ngFor="let offer of nearbyOffers" class="offer-card">
+      <ion-card-header>
+        <ion-card-title>{{ offer.sport_type }}</ion-card-title>
+        <div class="distance-badge">
+          <ion-icon name="navigate"></ion-icon>
+          <span>{{ getDistance(offer) }} km entfernt</span>
+        </div>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="offer-info">
+          <div class="info-item">
+            <ion-icon name="location"></ion-icon>
+            <span>{{ offer.location }}</span>
+          </div>
+          <div class="info-item">
+            <ion-icon name="time"></ion-icon>
+            <span>{{ formatDate(offer.date_time) }}</span>
+          </div>
+        </div>
+
+        <div *ngIf="offer.description" class="offer-description">
+          {{ offer.description }}
+        </div>
+
+        <div class="offer-author" *ngIf="offer.profiles">
+          <ion-avatar>
+            <img *ngIf="offer.profiles.avatar_url" [src]="offer.profiles.avatar_url" alt="Profilbild">
+            <ion-icon *ngIf="!offer.profiles.avatar_url" name="person"></ion-icon>
+          </ion-avatar>
+          <span>{{ getProfileName(offer.profiles) }}</span>
+        </div>
+
+        <ion-button
+          expand="block"
+          fill="outline"
+          (click)="openInMaps(offer)"
+          class="ion-margin-top"
+        >
+          <ion-icon name="navigate" slot="start"></ion-icon>
+          In Karten öffnen
+        </ion-button>
+      </ion-card-content>
+    </ion-card>
+  </div>
+</ion-content>

@@ -1,0 +1,89 @@
+.content-container {
+  padding: 1rem;
+}
+
+.location-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--ion-color-light);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: var(--ion-color-medium);
+
+  ion-icon {
+    color: var(--ion-color-primary);
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--ion-color-medium);
+
+  ion-icon {
+    color: var(--ion-color-medium);
+    margin-bottom: 1rem;
+  }
+}
+
+.offer-card {
+  margin-bottom: 1rem;
+}
+
+.distance-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  color: var(--ion-color-primary);
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.offer-info {
+  margin-bottom: 1rem;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--ion-color-medium);
+  font-size: 0.9rem;
+
+  ion-icon {
+    font-size: 1rem;
+  }
+}
+
+.offer-description {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: var(--ion-color-light);
+  border-radius: 8px;
+  color: var(--ion-color-dark);
+}
+
+.offer-author {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--ion-color-light);
+
+  ion-avatar {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+ion-spinner {
+  margin: 2rem auto;
+  display: block;
+}
+

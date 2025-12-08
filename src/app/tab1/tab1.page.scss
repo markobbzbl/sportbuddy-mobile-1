@@ -1,0 +1,68 @@
+.content-container {
+  padding: 1rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--ion-color-medium);
+}
+
+.offer-card {
+  margin-bottom: 1rem;
+}
+
+.card-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.card-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.offer-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  color: var(--ion-color-medium);
+  font-size: 0.9rem;
+
+  ion-icon {
+    font-size: 1rem;
+  }
+}
+
+.offer-description {
+  margin-bottom: 1rem;
+  color: var(--ion-color-dark);
+}
+
+.offer-author {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--ion-color-light);
+
+  ion-avatar {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+.error-text {
+  font-size: 0.875rem;
+  margin: 0.5rem 0 0 1rem;
+  display: block;
+}
+
+ion-spinner {
+  margin: 2rem auto;
+  display: block;
+}
+
