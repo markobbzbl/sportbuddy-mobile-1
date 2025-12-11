@@ -86,6 +86,12 @@ export class SyncService {
         } else if (operation.entity === 'profile') {
           const result = await this.supabase.updateProfile(user.id, operation.data);
           if (result.error) throw result.error;
+        } else if (operation.entity === 'training_offer_participant') {
+          const result = await this.supabase.joinTrainingOffer(
+            operation.data.training_offer_id,
+            operation.data.user_id
+          );
+          if (result.error) throw result.error;
         }
         break;
 
@@ -102,6 +108,12 @@ export class SyncService {
       case 'delete':
         if (operation.entity === 'training_offer') {
           const result = await this.supabase.deleteTrainingOffer(operation.data.id);
+          if (result.error) throw result.error;
+        } else if (operation.entity === 'training_offer_participant') {
+          const result = await this.supabase.leaveTrainingOffer(
+            operation.data.training_offer_id,
+            operation.data.user_id
+          );
           if (result.error) throw result.error;
         }
         break;

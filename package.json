@@ -1,8 +1,8 @@
 {
-  "name": "meetmefit",
+  "name": "sportbuddy",
   "version": "1.0.0",
-  "author": "MeetMeFit Team",
-  "homepage": "https://meetmefit.app/",
+  "author": "Sportbuddy Team",
+  "homepage": "https://sportbuddy.app/",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",

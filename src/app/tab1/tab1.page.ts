@@ -27,11 +27,13 @@ import {
   IonSpinner,
   IonButtons,
   IonText,
-  IonBadge
+  IonBadge,
+  IonList,
+  IonListHeader
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { add, location, time, person, create, trash, close, cloudOffline } from 'ionicons/icons';
-import { SupabaseService, TrainingOffer, Profile } from '../services/supabase.service';
+import { add, location, time, person, create, trash, close, cloudOffline, people, checkmarkCircle, addCircleOutline, closeCircle } from 'ionicons/icons';
+import { SupabaseService, TrainingOffer, Profile, Participant } from '../services/supabase.service';
 import { AuthService } from '../services/auth.service';
 import { StorageService } from '../services/storage.service';
 import { OfflineService } from '../services/offline.service';
@@ -74,7 +76,9 @@ import { Subscription } from 'rxjs';
     IonSpinner,
     IonButtons,
     IonText,
-    IonBadge
+    IonBadge,
+    IonList,
+    IonListHeader
   ]
 })
 export class Tab1Page implements OnInit, OnDestroy {
@@ -88,7 +92,12 @@ export class Tab1Page implements OnInit, OnDestroy {
   successMessage = '';
   isOnline = true;
   queueCount = 0;
+  participantsModalOpen = false;
+  selectedOfferParticipants: Participant[] = [];
+  selectedOffer: TrainingOffer | null = null;
+  loadingParticipants = false;
   private subscriptions: Subscription[] = [];
+  private successMessageTimeout?: any;
 
   sportTypes = [
     'Fußball',
@@ -114,7 +123,7 @@ export class Tab1Page implements OnInit, OnDestroy {
     private syncService: SyncService,
     private fb: FormBuilder
   ) {
-    addIcons({ add, location, time, person, create, trash, close, cloudOffline });
+    addIcons({ add, location, time, person, create, trash, close, cloudOffline, people, checkmarkCircle, addCircleOutline, closeCircle });
 
     this.offerForm = this.fb.group({
       sport_type: ['', Validators.required],
@@ -161,6 +170,21 @@ export class Tab1Page implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.subscriptions.forEach(sub => sub.unsubscribe());
+    if (this.successMessageTimeout) {
+      clearTimeout(this.successMessageTimeout);
+    }
+  }
+
+  private setSuccessMessage(message: string) {
+    this.successMessage = message;
+    // Clear any existing timeout
+    if (this.successMessageTimeout) {
+      clearTimeout(this.successMessageTimeout);
+    }
+    // Auto-dismiss after 3 seconds
+    this.successMessageTimeout = setTimeout(() => {
+      this.successMessage = '';
+    }, 3000);
   }
 
   async loadTrainingOffers() {
@@ -290,7 +314,7 @@ export class Tab1Page implements OnInit, OnDestroy {
               formValue
             );
             if (error) throw error;
-            this.successMessage = 'Trainingsangebot erfolgreich aktualisiert';
+            this.setSuccessMessage('Trainingsangebot erfolgreich aktualisiert');
           } catch (error: any) {
             // If online but failed, queue it
             if (!this.isOnline || error.message?.includes('network') || error.message?.includes('fetch')) {
@@ -326,7 +350,7 @@ export class Tab1Page implements OnInit, OnDestroy {
                 await this.storage.set('offline_created_offers', updatedOfflineCreated);
               }
               
-              this.successMessage = 'Trainingsangebot wird synchronisiert, sobald Sie online sind';
+              this.setSuccessMessage('Trainingsangebot wird synchronisiert, sobald Sie online sind');
             } else {
               throw error;
             }
@@ -365,7 +389,7 @@ export class Tab1Page implements OnInit, OnDestroy {
             await this.storage.set('offline_created_offers', updatedOfflineCreated);
           }
           
-          this.successMessage = 'Trainingsangebot wird synchronisiert, sobald Sie online sind';
+          this.setSuccessMessage('Trainingsangebot wird synchronisiert, sobald Sie online sind');
         }
       } else {
         // Create new offer
@@ -377,7 +401,7 @@ export class Tab1Page implements OnInit, OnDestroy {
               ...formValue
             });
             if (error) throw error;
-            this.successMessage = 'Trainingsangebot erfolgreich erstellt';
+            this.setSuccessMessage('Trainingsangebot erfolgreich erstellt');
           } catch (error: any) {
             // If online but failed, queue it
             if (!this.isOnline || error.message?.includes('network') || error.message?.includes('fetch')) {
@@ -386,7 +410,7 @@ export class Tab1Page implements OnInit, OnDestroy {
                 entity: 'training_offer',
                 data: { user_id: user.id, ...formValue }
               });
-              this.successMessage = 'Trainingsangebot wird synchronisiert, sobald Sie online sind';
+              this.setSuccessMessage('Trainingsangebot wird synchronisiert, sobald Sie online sind');
             } else {
               throw error;
             }
@@ -399,7 +423,7 @@ export class Tab1Page implements OnInit, OnDestroy {
             entity: 'training_offer',
             data: { user_id: user.id, ...formValue, tempId }
           });
-          this.successMessage = 'Trainingsangebot wird synchronisiert, sobald Sie online sind';
+          this.setSuccessMessage('Trainingsangebot wird synchronisiert, sobald Sie online sind');
           
           // Add to local display immediately
           const currentProfile = this.authService.getCurrentProfile();
@@ -477,7 +501,7 @@ export class Tab1Page implements OnInit, OnDestroy {
         try {
           const { error } = await this.supabase.deleteTrainingOffer(offer.id);
           if (error) throw error;
-          this.successMessage = 'Trainingsangebot erfolgreich gelöscht';
+          this.setSuccessMessage('Trainingsangebot erfolgreich gelöscht');
           await this.loadTrainingOffers();
         } catch (error: any) {
           // If online but failed, queue it
@@ -499,7 +523,7 @@ export class Tab1Page implements OnInit, OnDestroy {
               await this.storage.set('offline_created_offers', updatedOfflineCreated);
             }
             
-            this.successMessage = 'Löschung wird synchronisiert, sobald Sie online sind';
+            this.setSuccessMessage('Löschung wird synchronisiert, sobald Sie online sind');
           } else {
             throw error;
           }
@@ -523,7 +547,7 @@ export class Tab1Page implements OnInit, OnDestroy {
           await this.storage.set('offline_created_offers', updatedOfflineCreated);
         }
         
-        this.successMessage = 'Löschung wird synchronisiert, sobald Sie online sind';
+        this.setSuccessMessage('Löschung wird synchronisiert, sobald Sie online sind');
       }
     } catch (error: any) {
       this.errorMessage = error.message || 'Fehler beim Löschen des Trainingsangebots';
@@ -599,5 +623,141 @@ export class Tab1Page implements OnInit, OnDestroy {
     this.offerForm.reset();
     this.editingOffer = null;
     this.isEditMode = false;
+  }
+
+  async toggleParticipation(offer: TrainingOffer) {
+    const user = this.authService.getCurrentUser();
+    if (!user) {
+      this.errorMessage = 'Bitte melden Sie sich an';
+      return;
+    }
+
+    if (!this.isOnline) {
+      this.errorMessage = 'Sie können dies nicht tun, während Sie offline sind';
+      return;
+    }
+
+    this.isLoading = true;
+    try {
+      if (offer.is_participating) {
+        // Leave
+        const { error } = await this.supabase.leaveTrainingOffer(offer.id, user.id);
+        if (error) throw error;
+        this.setSuccessMessage('Sie haben das Training verlassen');
+      } else {
+        // Join
+        const { error } = await this.supabase.joinTrainingOffer(offer.id, user.id);
+        if (error) throw error;
+        this.setSuccessMessage('Sie nehmen jetzt am Training teil');
+      }
+
+      // Reload offers to get fresh data from server
+      await this.loadTrainingOffers();
+    } catch (error: any) {
+      this.errorMessage = error.message || 'Fehler beim Aktualisieren der Teilnahme';
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  async viewParticipants(offer: TrainingOffer) {
+    this.selectedOffer = offer;
+    this.loadingParticipants = true;
+    this.participantsModalOpen = true;
+    this.selectedOfferParticipants = [];
+
+    try {
+      if (!this.isOnline) {
+        this.errorMessage = 'Sie können dies nicht tun, während Sie offline sind';
+        this.loadingParticipants = false;
+        return;
+      }
+
+      const { data, error } = await this.supabase.getTrainingOfferParticipants(offer.id, 10);
+      if (error) throw error;
+      // Map data to Participant interface
+      this.selectedOfferParticipants = (data || []).map((p: any) => ({
+        id: p.id,
+        training_offer_id: offer.id,
+        user_id: p.user_id,
+        created_at: p.created_at,
+        profiles: p.profiles
+      }));
+    } catch (error: any) {
+      console.error('Error loading participants:', error);
+      this.errorMessage = 'Fehler beim Laden der Teilnehmer';
+    } finally {
+      this.loadingParticipants = false;
+    }
+  }
+
+  closeParticipantsModal() {
+    this.participantsModalOpen = false;
+    this.selectedOffer = null;
+    this.selectedOfferParticipants = [];
+  }
+
+  getParticipantName(participant: Participant): string {
+    if (!participant.profiles) return 'Unbekannt';
+    const firstName = participant.profiles.first_name || '';
+    const lastName = participant.profiles.last_name || '';
+    const name = `${firstName} ${lastName}`.trim();
+    return name || 'Unbekannt';
+  }
+
+  canRemoveParticipant(offer: TrainingOffer | null, participantUserId?: string): boolean {
+    if (!offer) return false;
+    const user = this.authService.getCurrentUser();
+    // Only owner can remove, but not themselves
+    if (user?.id !== offer.user_id) return false;
+    // Don't allow removing yourself
+    if (participantUserId && user.id === participantUserId) return false;
+    return true;
+  }
+
+  async removeParticipant(participant: Participant) {
+    if (!this.selectedOffer) return;
+
+    // Prevent removing yourself
+    const user = this.authService.getCurrentUser();
+    if (user?.id === participant.user_id) {
+      this.errorMessage = 'Sie können sich nicht selbst entfernen';
+      return;
+    }
+
+    if (!confirm(`Möchten Sie ${this.getParticipantName(participant)} wirklich entfernen?`)) {
+      return;
+    }
+
+    this.isLoading = true;
+    try {
+      if (!this.isOnline) {
+        this.errorMessage = 'Sie können dies nicht tun, während Sie offline sind';
+        return;
+      }
+
+      const { error } = await this.supabase.removeParticipant(
+        this.selectedOffer.id,
+        participant.user_id
+      );
+      
+      if (error) {
+        console.error('Error removing participant:', error);
+        this.errorMessage = error.message || 'Fehler beim Entfernen des Teilnehmers. Möglicherweise fehlen die Berechtigungen.';
+        return;
+      }
+      
+      // Reload participants list to get fresh data from server
+      await this.viewParticipants(this.selectedOffer);
+      
+      // Reload training offers to update participant count
+      await this.loadTrainingOffers();
+      
+      this.setSuccessMessage('Teilnehmer erfolgreich entfernt');
+    } catch (error: any) {
+      this.errorMessage = error.message || 'Fehler beim Entfernen des Teilnehmers';
+    } finally {
+      this.isLoading = false;
+    }
   }
 }

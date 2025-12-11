@@ -19,13 +19,22 @@ CREATE TABLE IF NOT EXISTS public.training_offers (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   sport_type TEXT NOT NULL,
-  location_name TEXT NOT NULL,
-  latitude DOUBLE PRECISION NOT NULL,
-  longitude DOUBLE PRECISION NOT NULL,
-  training_time TIMESTAMP WITH TIME ZONE NOT NULL,
+  location TEXT NOT NULL,
+  latitude DOUBLE PRECISION,
+  longitude DOUBLE PRECISION,
+  date_time TIMESTAMP WITH TIME ZONE NOT NULL,
   description TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- Create training_offer_participants table
+CREATE TABLE IF NOT EXISTS public.training_offer_participants (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  training_offer_id UUID REFERENCES public.training_offers(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  UNIQUE(training_offer_id, user_id)
 );
 
 -- Create storage bucket for avatars
@@ -36,50 +45,90 @@ ON CONFLICT (id) DO NOTHING;
 -- Enable Row Level Security
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.training_offers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.training_offer_participants ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
+DROP POLICY IF EXISTS "Users can view all profiles" ON public.profiles;
 CREATE POLICY "Users can view all profiles"
   ON public.profiles FOR SELECT
   USING (true);
 
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile"
   ON public.profiles FOR UPDATE
   USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
 CREATE POLICY "Users can insert own profile"
   ON public.profiles FOR INSERT
   WITH CHECK (auth.uid() = id);
 
 -- Training offers policies
+DROP POLICY IF EXISTS "Anyone can view training offers" ON public.training_offers;
 CREATE POLICY "Anyone can view training offers"
   ON public.training_offers FOR SELECT
   USING (true);
 
+DROP POLICY IF EXISTS "Users can create training offers" ON public.training_offers;
 CREATE POLICY "Users can create training offers"
   ON public.training_offers FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own training offers" ON public.training_offers;
 CREATE POLICY "Users can update own training offers"
   ON public.training_offers FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own training offers" ON public.training_offers;
 CREATE POLICY "Users can delete own training offers"
   ON public.training_offers FOR DELETE
   USING (auth.uid() = user_id);
 
+-- Training offer participants policies
+DROP POLICY IF EXISTS "Anyone can view participants" ON public.training_offer_participants;
+CREATE POLICY "Anyone can view participants"
+  ON public.training_offer_participants FOR SELECT
+  USING (true);
+
+DROP POLICY IF EXISTS "Users can join training offers" ON public.training_offer_participants;
+CREATE POLICY "Users can join training offers"
+  ON public.training_offer_participants FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can leave training offers" ON public.training_offer_participants;
+CREATE POLICY "Users can leave training offers"
+  ON public.training_offer_participants FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- Allow training offer owners to remove participants
+DROP POLICY IF EXISTS "Owners can remove participants" ON public.training_offer_participants;
+CREATE POLICY "Owners can remove participants"
+  ON public.training_offer_participants FOR DELETE
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.training_offers
+      WHERE training_offers.id = training_offer_participants.training_offer_id
+      AND training_offers.user_id = auth.uid()
+    )
+  );
+
 -- Storage policies for avatars
+DROP POLICY IF EXISTS "Avatar images are publicly accessible" ON storage.objects;
 CREATE POLICY "Avatar images are publicly accessible"
   ON storage.objects FOR SELECT
   USING (bucket_id = 'avatars');
 
+DROP POLICY IF EXISTS "Users can upload own avatar" ON storage.objects;
 CREATE POLICY "Users can upload own avatar"
   ON storage.objects FOR INSERT
   WITH CHECK (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
 
+DROP POLICY IF EXISTS "Users can update own avatar" ON storage.objects;
 CREATE POLICY "Users can update own avatar"
   ON storage.objects FOR UPDATE
   USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
 
+DROP POLICY IF EXISTS "Users can delete own avatar" ON storage.objects;
 CREATE POLICY "Users can delete own avatar"
   ON storage.objects FOR DELETE
   USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
@@ -114,10 +163,12 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Triggers for updated_at
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON public.profiles;
 CREATE TRIGGER update_profiles_updated_at
   BEFORE UPDATE ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
+DROP TRIGGER IF EXISTS update_training_offers_updated_at ON public.training_offers;
 CREATE TRIGGER update_training_offers_updated_at
   BEFORE UPDATE ON public.training_offers
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();

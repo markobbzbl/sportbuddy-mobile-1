@@ -5,7 +5,7 @@ import { map } from 'rxjs/operators';
 export interface QueuedOperation {
   id: string;
   type: 'create' | 'update' | 'delete';
-  entity: 'training_offer' | 'profile';
+  entity: 'training_offer' | 'profile' | 'training_offer_participant';
   data: any;
   timestamp: number;
   retryCount?: number;

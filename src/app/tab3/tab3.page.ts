@@ -72,6 +72,7 @@ export class Tab3Page implements OnInit, OnDestroy {
   userEmail: string = '';
   isOnline = true;
   private subscriptions: Subscription[] = [];
+  private successMessageTimeout?: any;
 
   constructor(
     private authService: AuthService,
@@ -112,6 +113,21 @@ export class Tab3Page implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.subscriptions.forEach(sub => sub.unsubscribe());
+    if (this.successMessageTimeout) {
+      clearTimeout(this.successMessageTimeout);
+    }
+  }
+
+  private setSuccessMessage(message: string) {
+    this.successMessage = message;
+    // Clear any existing timeout
+    if (this.successMessageTimeout) {
+      clearTimeout(this.successMessageTimeout);
+    }
+    // Auto-dismiss after 3 seconds
+    this.successMessageTimeout = setTimeout(() => {
+      this.successMessage = '';
+    }, 3000);
   }
 
   async loadProfile() {
@@ -246,7 +262,7 @@ export class Tab3Page implements OnInit, OnDestroy {
             this.avatarUrl = data.publicUrl;
             const { error: updateError } = await this.supabase.updateProfile(user.id, { avatar_url: data.publicUrl });
             if (updateError) throw updateError;
-            this.successMessage = 'Profilbild erfolgreich aktualisiert';
+            this.setSuccessMessage('Profilbild erfolgreich aktualisiert');
             await this.loadProfile();
           }
         } catch (error: any) {
@@ -259,7 +275,7 @@ export class Tab3Page implements OnInit, OnDestroy {
               entity: 'profile',
               data: { avatar_url: dataUrl } // Will need to upload when online
             });
-            this.successMessage = 'Profilbild wird synchronisiert, sobald Sie online sind';
+            this.setSuccessMessage('Profilbild wird synchronisiert, sobald Sie online sind');
           } else {
             throw error;
           }
@@ -272,7 +288,7 @@ export class Tab3Page implements OnInit, OnDestroy {
           entity: 'profile',
           data: { avatar_url: dataUrl } // Will need to upload when online
         });
-        this.successMessage = 'Profilbild wird synchronisiert, sobald Sie online sind';
+        this.setSuccessMessage('Profilbild wird synchronisiert, sobald Sie online sind');
       }
     } catch (error: any) {
       console.error('Error uploading avatar:', error);
@@ -316,7 +332,7 @@ export class Tab3Page implements OnInit, OnDestroy {
           if (data) {
             this.profile = data;
             await this.storage.set('offline_profile', data);
-            this.successMessage = 'Profil erfolgreich aktualisiert';
+            this.setSuccessMessage('Profil erfolgreich aktualisiert');
             this.isEditing = false;
           }
         } catch (error: any) {
@@ -330,7 +346,7 @@ export class Tab3Page implements OnInit, OnDestroy {
             // Update local profile immediately
             this.profile = { ...this.profile!, ...profileUpdates };
             await this.storage.set('offline_profile', this.profile);
-            this.successMessage = 'Profil wird synchronisiert, sobald Sie online sind';
+            this.setSuccessMessage('Profil wird synchronisiert, sobald Sie online sind');
             this.isEditing = false;
           } else {
             throw error;

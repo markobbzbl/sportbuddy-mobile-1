@@ -15,24 +15,27 @@
     <ion-refresher-content></ion-refresher-content>
   </ion-refresher>
 
-  <div class="content-container">
-    <ion-spinner *ngIf="isLoading && trainingOffers.length === 0" name="crescent"></ion-spinner>
-
-    <ion-text color="danger" *ngIf="errorMessage">
+  <!-- Messages at the top -->
+  <div class="messages-container">
+    <ion-text color="danger" *ngIf="errorMessage" class="message-banner error-banner">
       <p class="ion-padding">{{ errorMessage }}</p>
     </ion-text>
 
-    <ion-text color="success" *ngIf="successMessage">
+    <ion-text color="success" *ngIf="successMessage" class="message-banner success-banner">
       <p class="ion-padding">{{ successMessage }}</p>
     </ion-text>
 
-    <ion-text *ngIf="!isOnline" color="warning" style="display: block; padding: 12px; margin: 8px; background: rgba(255, 152, 0, 0.1); border-left: 4px solid #ff9800; border-radius: 4px;">
+    <ion-text *ngIf="!isOnline" color="warning" class="message-banner offline-banner">
       <p style="margin: 0; font-weight: 500;">
         <ion-icon name="cloud-offline" style="vertical-align: middle; margin-right: 4px;"></ion-icon>
         Offline-Modus: Erstellte Angebote werden synchronisiert, sobald Sie online sind.
         <span *ngIf="queueCount > 0"> ({{ queueCount }} ausstehend)</span>
       </p>
     </ion-text>
+  </div>
+
+  <div class="content-container">
+    <ion-spinner *ngIf="isLoading && trainingOffers.length === 0" name="crescent"></ion-spinner>
 
     <div *ngIf="trainingOffers.length === 0 && !isLoading" class="empty-state">
       <p>Noch keine Trainingsangebote vorhanden.</p>
@@ -67,6 +70,38 @@
         <div *ngIf="offer.description" class="offer-description">
           {{ offer.description }}
         </div>
+        
+        <!-- Participant Section -->
+        <div class="participant-section">
+          <div class="participant-info">
+            <ion-icon name="people"></ion-icon>
+            <span class="participant-count">{{ offer.participant_count || 0 }}</span>
+            <ion-button 
+              *ngIf="(offer.participant_count || 0) > 0"
+              fill="clear" 
+              size="small" 
+              (click)="viewParticipants(offer)"
+              class="view-participants-btn"
+            >
+              Anzeigen
+            </ion-button>
+          </div>
+          <ion-button 
+            fill="clear" 
+            size="small"
+            (click)="toggleParticipation(offer)"
+            [disabled]="isLoading || !isOnline"
+            [color]="offer.is_participating ? 'success' : 'medium'"
+            class="participate-btn"
+            [title]="!isOnline ? 'Sie können dies nicht tun, während Sie offline sind' : ''"
+          >
+            <ion-icon 
+              [name]="offer.is_participating ? 'checkmark-circle' : 'add-circle-outline'" 
+              slot="icon-only"
+            ></ion-icon>
+          </ion-button>
+        </div>
+
         <div class="offer-author">
           <ion-avatar>
             <img *ngIf="offer.profiles?.avatar_url" [src]="offer.profiles?.avatar_url" alt="Profilbild">
@@ -161,10 +196,57 @@
     </ng-template>
   </ion-modal>
 
-  <ion-toast
-    [isOpen]="!!successMessage"
-    [message]="successMessage"
-    [duration]="3000"
-    (didDismiss)="successMessage = ''"
-  ></ion-toast>
+  <!-- Participants Modal -->
+  <ion-modal [isOpen]="participantsModalOpen" (didDismiss)="closeParticipantsModal()">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Teilnehmer</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="closeParticipantsModal()" aria-label="Schließen">
+              <ion-icon name="close" slot="icon-only"></ion-icon>
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+        <ion-spinner *ngIf="loadingParticipants" name="crescent"></ion-spinner>
+        
+        <div *ngIf="!loadingParticipants">
+          <p *ngIf="selectedOfferParticipants.length === 0" class="ion-text-center ion-margin-top">
+            Noch keine Teilnehmer
+          </p>
+          
+          <ion-list *ngIf="selectedOfferParticipants.length > 0">
+            <ion-list-header>
+              <ion-label>{{ selectedOfferParticipants.length }} Teilnehmer</ion-label>
+            </ion-list-header>
+            <ion-item *ngFor="let participant of selectedOfferParticipants">
+              <ion-avatar slot="start" class="participant-avatar">
+                <img *ngIf="participant.profiles?.avatar_url" [src]="participant.profiles?.avatar_url" alt="Profilbild">
+                <ion-icon *ngIf="!participant.profiles?.avatar_url" name="person"></ion-icon>
+              </ion-avatar>
+              <ion-label>
+                <h2>{{ getParticipantName(participant) }}</h2>
+              </ion-label>
+              <ion-button 
+                *ngIf="canRemoveParticipant(selectedOffer, participant.user_id)"
+                fill="clear" 
+                size="small" 
+                color="danger"
+                (click)="removeParticipant(participant)"
+                [disabled]="isLoading"
+                slot="end"
+                class="remove-participant-btn"
+              >
+                <ion-icon name="close-circle" slot="icon-only"></ion-icon>
+              </ion-button>
+            </ion-item>
+          </ion-list>
+        </div>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+
+  <!-- Toast removed - using inline messages at top instead -->
 </ion-content>

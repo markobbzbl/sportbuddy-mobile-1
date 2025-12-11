@@ -23,6 +23,16 @@ export interface TrainingOffer {
   created_at: string;
   updated_at: string;
   profiles?: Profile;
+  participant_count?: number;
+  is_participating?: boolean;
+}
+
+export interface Participant {
+  id: string;
+  training_offer_id?: string;
+  user_id: string;
+  created_at: string;
+  profiles?: Profile;
 }
 
 @Injectable({
@@ -130,6 +140,10 @@ export class SupabaseService {
 
   // Training offers methods
   async getTrainingOffers() {
+    const currentUser = await this.supabase.auth.getUser();
+    const userId = currentUser.data.user?.id;
+
+    // Get offers with profiles
     const { data, error } = await this.supabase
       .from('training_offers')
       .select(`
@@ -143,7 +157,25 @@ export class SupabaseService {
       `)
       .order('created_at', { ascending: false });
 
-    return { data, error };
+    if (error) {
+      return { data: null, error };
+    }
+
+    // Get participant counts and participation status for each offer
+    const transformedData = await Promise.all(
+      (data || []).map(async (offer) => {
+        const { count } = await this.getParticipantCount(offer.id);
+        const isParticipating = userId ? await this.isUserParticipating(offer.id, userId) : false;
+        
+        return {
+          ...offer,
+          participant_count: count,
+          is_participating: isParticipating
+        };
+      })
+    );
+
+    return { data: transformedData, error: null };
   }
 
   async getTrainingOffer(id: string) {
@@ -206,6 +238,93 @@ export class SupabaseService {
       .from('training_offers')
       .delete()
       .eq('id', id);
+
+    return { error };
+  }
+
+  // Participant methods
+  async joinTrainingOffer(trainingOfferId: string, userId: string) {
+    // Check if already participating
+    const { data: existing } = await this.supabase
+      .from('training_offer_participants')
+      .select('id')
+      .eq('training_offer_id', trainingOfferId)
+      .eq('user_id', userId)
+      .single();
+
+    if (existing) {
+      return { data: existing, error: null }; // Already participating
+    }
+
+    const { data, error } = await this.supabase
+      .from('training_offer_participants')
+      .insert([{
+        training_offer_id: trainingOfferId,
+        user_id: userId
+      }])
+      .select()
+      .single();
+
+    return { data, error };
+  }
+
+  async leaveTrainingOffer(trainingOfferId: string, userId: string) {
+    const { error } = await this.supabase
+      .from('training_offer_participants')
+      .delete()
+      .eq('training_offer_id', trainingOfferId)
+      .eq('user_id', userId);
+
+    return { error };
+  }
+
+  async getTrainingOfferParticipants(trainingOfferId: string, limit: number = 10) {
+    const { data, error } = await this.supabase
+      .from('training_offer_participants')
+      .select(`
+        id,
+        user_id,
+        created_at,
+        profiles:user_id (
+          id,
+          first_name,
+          last_name,
+          avatar_url
+        )
+      `)
+      .eq('training_offer_id', trainingOfferId)
+      .order('created_at', { ascending: true })
+      .limit(limit);
+
+    return { data, error };
+  }
+
+  async getParticipantCount(trainingOfferId: string) {
+    const { count, error } = await this.supabase
+      .from('training_offer_participants')
+      .select('*', { count: 'exact', head: true })
+      .eq('training_offer_id', trainingOfferId);
+
+    return { count: count || 0, error };
+  }
+
+  async isUserParticipating(trainingOfferId: string, userId: string): Promise<boolean> {
+    const { data, error } = await this.supabase
+      .from('training_offer_participants')
+      .select('id')
+      .eq('training_offer_id', trainingOfferId)
+      .eq('user_id', userId)
+      .single();
+
+    return !!data && !error;
+  }
+
+  async removeParticipant(trainingOfferId: string, participantUserId: string) {
+    const { error } = await this.supabase
+      .from('training_offer_participants')
+      .delete()
+      .eq('training_offer_id', trainingOfferId)
+      .eq('user_id', participantUserId);
 
     return { error };
   }
