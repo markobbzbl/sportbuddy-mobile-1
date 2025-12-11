@@ -122,3 +122,4 @@ CREATE TRIGGER update_training_offers_updated_at
   BEFORE UPDATE ON public.training_offers
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
+

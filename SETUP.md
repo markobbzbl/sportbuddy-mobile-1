@@ -132,3 +132,4 @@ Bei Problemen:
 2. Überprüfen Sie die Supabase Logs im Dashboard
 3. Stellen Sie sicher, dass alle RLS-Policies korrekt gesetzt sind
 
+
